@@ -18,6 +18,41 @@ impl Memory {
             }
         }
     }
+
+    pub fn read_u16(&self, index: usize) -> u16 {
+        let bytes = [
+            self[index],
+            self[index + 1],
+        ];
+
+        u16::from_le_bytes(bytes)
+    }
+
+    pub fn read_u32(&self, index: usize) -> u32 {
+        let bytes = [
+            self[index],
+            self[index + 1],
+            self[index + 2],
+            self[index + 3],
+        ];
+
+        u32::from_le_bytes(bytes)
+    }
+
+    pub fn read_u64(&self, index: usize) -> u64 {
+        let bytes = [
+            self[index],
+            self[index + 1],
+            self[index + 2],
+            self[index + 3],
+            self[index + 4],
+            self[index + 5],
+            self[index + 6],
+            self[index + 7],
+        ];
+
+        u64::from_le_bytes(bytes)
+    }
 }
 
 use core::ops::{ Index, IndexMut };

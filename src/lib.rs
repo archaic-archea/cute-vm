@@ -27,7 +27,23 @@ lazy_static::lazy_static!(
 /// Initialize memory
 /// TODO: Add custom memory sizes
 pub fn init() {
+    let args = Args::parse();
+
     unsafe {
-        MEM = Memory::new(0xffff);
+        let memory = args.memory_size.unwrap_or_else(|| {0xFFFF});
+
+        if memory < 0x401 {
+            panic!("Not enough memory provided for stack and instruction pointer");
+        }
+
+        MEM = Memory::new(memory as usize);
     }
+}
+
+use clap::Parser;
+#[derive(Parser,Default,Debug)]
+#[clap(author="Lilly, & Arc", version, about="A simple stack machine")]
+struct Args {
+    #[clap(short, long)]
+    memory_size: Option<u16>,
 }
