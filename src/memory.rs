@@ -43,3 +43,6 @@ impl IndexMut<usize> for Memory {
         unsafe { return &mut *self.base.add(rhs); }
     }
 }
+
+unsafe impl Send for Memory {} 
+unsafe impl Sync for Memory {}

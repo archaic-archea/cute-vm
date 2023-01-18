@@ -1,22 +1,13 @@
 use super::memory::Memory;
 
 pub struct Stack {
-    memory: Memory,
     location: u16,
     offset: u8
 }
 
 impl Stack {
-    pub const fn null() -> Stack {
-        Stack {
-            memory: Memory::null(),
-            location: 0,
-            offset: 0
-        }
-    }
-
-    pub fn new(memory: Memory, location: u16) -> Stack {
-        Stack { memory, location, offset: 0}
+    pub fn new(location: u16) -> Stack {
+        Stack { location, offset: 0}
     }
 
     pub fn push(&mut self, data: u8) {
@@ -50,7 +41,9 @@ impl Index<usize> for Stack {
             panic!("index out of bounds: the len is 256 but the index is {}", rhs);
         }
 
-        &self.memory[(self.location as usize) - rhs]
+        unsafe {
+            return &super::MEM[(self.location as usize) - rhs];
+        }
     }
 }
 
@@ -59,7 +52,8 @@ impl IndexMut<usize> for Stack {
         if rhs >= 256 {
             panic!("index out of bounds: the len is 256 but the index is {}", rhs);
         }
-
-        &mut self.memory[(self.location as usize) - rhs]
+        unsafe{
+            return &mut super::MEM[(self.location as usize) - rhs];
+        }
     }
 }
