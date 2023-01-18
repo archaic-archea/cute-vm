@@ -7,7 +7,7 @@ use self::{memory::Memory, stack::Stack};
 
 use std::sync::Mutex;
 
-pub static mut MEM: Option<Memory> = None;
+pub static mut MEM: Memory = Memory::null();
 
 lazy_static::lazy_static!(
     pub static ref PRIMARY_STACK: Mutex<Stack> = {
@@ -23,8 +23,11 @@ lazy_static::lazy_static!(
     };
 );
 
+
+/// Initialize memory
+/// TODO: Add custom memory sizes
 pub fn init() {
     unsafe {
-        MEM = Some(Memory::new(0xffff))
+        MEM = Memory::new(0xffff);
     }
 }
