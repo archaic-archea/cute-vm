@@ -1,6 +1,6 @@
 pub struct Stack {
     location: u16,
-    offset: u8
+    offset: u16
 }
 
 impl Stack {
@@ -8,20 +8,28 @@ impl Stack {
         Stack { location, offset: 0}
     }
 
-    pub fn push(&mut self, data: u8) {
+    pub fn push(&mut self, data: u16) {
+        if self.offset >= 0x200 {
+            panic!("Stack overflow");
+        }
+
         let index = self.offset as usize;
 
-        self[index] = data;
+        self[index] = data.to_be_bytes()[0];
+        self[index + 1] = data.to_be_bytes()[1];
 
-        self.offset += 1;
+        self.offset += 2;
     }
 
-    pub fn pop(&mut self) -> u8 {
-        self.offset -= 1;
+    pub fn pop(&mut self) -> u16 {
+        if self.offset < 2 {
+            self.offset = 2
+        }
+        self.offset -= 2;
 
         let index = self.offset as usize;
 
-        let ret = self[index];
+        let ret = u16::from_be_bytes([self[index], self[index + 1]]);
 
         self[index] = 0;
 
