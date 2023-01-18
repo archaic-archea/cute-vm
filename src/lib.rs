@@ -5,10 +5,10 @@ pub mod memory;
 
 use self::{memory::Memory, stack::Stack};
 
-use std::sync::Mutex;
 
 pub static mut MEM: Memory = Memory::null();
 
+use std::sync::Mutex;
 lazy_static::lazy_static!(
     pub static ref PRIMARY_STACK: Mutex<Stack> = {
         let stack = Stack::new(0xff);

@@ -1,5 +1,3 @@
-use super::memory::Memory;
-
 pub struct Stack {
     location: u16,
     offset: u8
