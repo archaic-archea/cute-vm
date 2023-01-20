@@ -53,6 +53,35 @@ impl Memory {
 
         u64::from_le_bytes(bytes)
     }
+
+    pub fn write_u16(&mut self, index: usize, num: u16) {
+        let bytes = num.to_le_bytes();
+
+        self[index] = bytes[0];
+        self[index + 1] = bytes[1];
+    }
+
+    pub fn write_u32(&mut self, index: usize, num: u32) {
+        let bytes = num.to_le_bytes();
+
+        self[index] = bytes[0];
+        self[index + 1] = bytes[1];
+        self[index + 2] = bytes[2];
+        self[index + 3] = bytes[3];
+    }
+
+    pub fn write_u64(&mut self, index: usize, num: u64) {
+        let bytes = num.to_le_bytes();
+
+        self[index] = bytes[0];
+        self[index + 1] = bytes[1];
+        self[index + 2] = bytes[2];
+        self[index + 3] = bytes[3];
+        self[index + 4] = bytes[4];
+        self[index + 5] = bytes[5];
+        self[index + 6] = bytes[6];
+        self[index + 7] = bytes[7];
+    }
 }
 
 use core::ops::{ Index, IndexMut };

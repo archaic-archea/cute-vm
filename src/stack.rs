@@ -15,8 +15,7 @@ impl Stack {
 
         let index = self.offset as usize;
 
-        self[index] = data.to_be_bytes()[0];
-        self[index + 1] = data.to_be_bytes()[1];
+        self[index] = data.to_be();
 
         self.offset += 2;
     }
@@ -29,7 +28,7 @@ impl Stack {
 
         let index = self.offset as usize;
 
-        let ret = u16::from_be_bytes([self[index], self[index + 1]]);
+        let ret = u16::from_be(self[index]);
 
         self[index] = 0;
 
@@ -40,26 +39,28 @@ impl Stack {
 use core::ops::{ Index, IndexMut };
 
 impl Index<usize> for Stack {
-    type Output = u8;
+    type Output = u16;
 
-    fn index(&self, rhs: usize) -> &u8 {
+    fn index(&self, rhs: usize) -> &u16 {
         if rhs >= 256 {
             panic!("index out of bounds: the len is 256 but the index is {}", rhs);
         }
 
         unsafe {
-            return &super::MEM[(self.location as usize) - rhs];
+            let reference = &*(&mut super::MEM[(self.location as usize) - rhs] as *mut u8 as *mut u16);
+            return reference;
         }
     }
 }
 
 impl IndexMut<usize> for Stack {
-    fn index_mut(&mut self, rhs: usize) -> &mut u8 {
+    fn index_mut(&mut self, rhs: usize) -> &mut u16 {
         if rhs >= 256 {
             panic!("index out of bounds: the len is 256 but the index is {}", rhs);
         }
         unsafe{
-            return &mut super::MEM[(self.location as usize) - rhs];
+            let reference = &mut *(&mut super::MEM[(self.location as usize) - rhs] as *mut u8 as *mut u16);
+            return reference;
         }
     }
 }

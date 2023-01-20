@@ -2,13 +2,14 @@ extern crate alloc;
 
 pub mod stack;
 pub mod memory;
+pub mod instructions;
 
 use self::{memory::Memory, stack::Stack};
 
 
+use std::sync::Mutex;
 pub static mut MEM: Memory = Memory::null();
 
-use std::sync::Mutex;
 lazy_static::lazy_static!(
     pub static ref PRIMARY_STACK: Mutex<Stack> = {
         let stack = Stack::new(0xff);
@@ -32,7 +33,7 @@ pub fn init() {
     unsafe {
         let memory = args.memory_size.unwrap_or_else(|| {0xFFFF});
 
-        if memory < 0x401 {
+        if memory < 0x402 {
             panic!("Not enough memory provided for stack and instruction pointer");
         }
 
