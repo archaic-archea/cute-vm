@@ -9,20 +9,8 @@ use self::{memory::Memory, stack::Stack};
 
 use std::sync::Mutex;
 pub static mut MEM: Memory = Memory::null();
-
-lazy_static::lazy_static!(
-    pub static ref PRIMARY_STACK: Mutex<Stack> = {
-        let stack = Stack::new(0xff);
-
-        Mutex::new(stack)
-    };
-
-    pub static ref RETURN_STACK: Mutex<Stack> = {
-        let stack = Stack::new(0x1ff);
-
-        Mutex::new(stack)
-    };
-);
+pub static PRIMARY_STACK: Mutex<Stack> = Mutex::new(Stack::new(0xff));
+pub static RETURN_STACK: Mutex<Stack> = Mutex::new(Stack::new(0x1ff));
 
 pub fn push(data: u32, flags: &Vec<Status>) {
     if flags.contains(&Status::Return) {
@@ -61,13 +49,13 @@ pub fn top(ret_stack: bool) -> usize {
 pub fn init() {
     let args = Args::parse();
 
+    let memory = args.memory_size.unwrap_or_else(|| {0xFFFF});
+
+    if memory < 0x402 {
+        panic!("Not enough memory provided for stack and instruction pointer");
+    }
+
     unsafe {
-        let memory = args.memory_size.unwrap_or_else(|| {0xFFFF});
-
-        if memory < 0x402 {
-            panic!("Not enough memory provided for stack and instruction pointer");
-        }
-
         MEM = Memory::new(memory as usize);
     }
 }

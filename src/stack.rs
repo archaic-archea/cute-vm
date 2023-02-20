@@ -4,27 +4,35 @@ pub struct Stack {
 }
 
 impl Stack {
-    pub fn new(location: u16) -> Stack {
+    pub const fn new(location: u16) -> Stack {
         Stack { location, offset: 0}
+    }
+
+    pub unsafe fn set_offset(&mut self, offset: u16) {
+        self.offset = offset;
     }
 
     pub fn push(&mut self, data: u32, flags: &Vec<Status>) {
         if self.offset >= 0x200 {
             panic!("Stack overflow");
         }
+        
+        let base = self.location as usize;
 
         let index = self.offset as usize;
 
-        let bytes = data.to_be_bytes();
+        let bytes: [u8; 4] = data.to_le_bytes();
 
-        self[index] = u16::from_be_bytes([bytes[0], bytes[1]]);
+        self[index] = bytes[0];
+        self[index + 1] = bytes[1];
 
         self.offset += 2;
 
         if flags.contains(&Status::Short) {
             let index = self.offset as usize;
 
-            self[index] = u16::from_be_bytes([bytes[0], bytes[1]]);
+            self[index] = bytes[2];
+            self[index + 1] = bytes[3];
     
             self.offset += 2;
         }
@@ -49,17 +57,20 @@ impl Stack {
 
 
         if flags.contains(&Status::Short) {
-            let mbytes = self[index + 2].to_be_bytes();
-            let lbytes = self[index].to_be_bytes();
+            let mbytes = [self[index + 2], self[index + 3]];
+            let lbytes = [self[index], self[index + 1]];
 
-            bytes = [mbytes[0], mbytes[1], lbytes[0], lbytes[1]];
+            bytes = [mbytes[1], mbytes[0], lbytes[1], lbytes[0]];
             self[index] = 0;
+            self[index + 1] = 0;
             self[index + 2] = 0;
+            self[index + 3] = 0;
         } else {
-            let lbytes = self[index].to_be_bytes();
+            let lbytes = [self[index], self[index + 1]];
 
-            bytes = [0, 0, lbytes[0], lbytes[1]];
+            bytes = [0, 0, lbytes[1], lbytes[0]];
             self[index] = 0;
+            self[index + 1] = 0;
         }
 
         let ret = u32::from_be_bytes(bytes);
@@ -76,14 +87,14 @@ impl Stack {
 
 
         if flags.contains(&Status::Short) {
-            let mbytes = self[index + 2].to_be_bytes();
-            let lbytes = self[index].to_be_bytes();
+            let mbytes = [self[index + 2], self[index + 3]];
+            let lbytes = [self[index], self[index + 1]];
 
-            bytes = [mbytes[0], mbytes[1], lbytes[0], lbytes[1]];
+            bytes = [mbytes[1], mbytes[0], lbytes[1], lbytes[0]];
         } else {
-            let lbytes = self[index].to_be_bytes();
+            let lbytes = [self[index], self[index + 1]];
 
-            bytes = [0, 0, lbytes[0], lbytes[1]];
+            bytes = [0, 0, lbytes[1], lbytes[0]];
         }
 
         let ret = u32::from_be_bytes(bytes);
@@ -101,28 +112,27 @@ use core::ops::{ Index, IndexMut };
 use crate::instructions::Status;
 
 impl Index<usize> for Stack {
-    type Output = u16;
+    type Output = u8;
 
-    fn index(&self, rhs: usize) -> &u16 {
+    fn index(&self, rhs: usize) -> &u8 {
         if rhs >= 256 {
             panic!("index out of bounds: the len is 256 but the index is {}", rhs);
         }
 
         unsafe {
-            let reference = &*(&mut super::MEM[(self.location as usize) - rhs] as *mut u8 as *mut u16);
-            return reference;
+            return &super::MEM[(self.location as usize) - rhs];
         }
     }
 }
 
 impl IndexMut<usize> for Stack {
-    fn index_mut(&mut self, rhs: usize) -> &mut u16 {
-        if rhs >= 256 {
+    fn index_mut(&mut self, rhs: usize) -> &mut u8 {
+        if rhs >= 128 {
             panic!("index out of bounds: the len is 256 but the index is {}", rhs);
         }
+
         unsafe{
-            let reference = &mut *(&mut super::MEM[(self.location as usize) - rhs] as *mut u8 as *mut u16);
-            return reference;
+            return &mut super::MEM[(self.location as usize) - rhs];
         }
     }
 }
@@ -136,7 +146,10 @@ impl fmt::Display for Stack {
         let range = 0..self.offset;
 
         for i in range.step_by(2) {
-            write!(f, "{}\n", self.copy(i as usize, &vec![Status::None]))?;
+            write!(f, "{}", self.copy(i as usize, &vec![Status::None]))?;
+            if i != self.offset - 2 {
+                write!(f, "\n")?;
+            }
         }
 
         Ok(())
@@ -150,7 +163,10 @@ impl fmt::Debug for Stack {
         let range = 0..self.offset;
 
         for i in range.step_by(4) {
-            write!(f, "{}\n", self.copy(i as usize, &vec![Status::Short]))?;
+            write!(f, "{}", self.copy(i as usize, &vec![Status::Short]))?;
+            if i != self.offset - 4 {
+                write!(f, "\n")?;
+            }
         }
 
         Ok(())

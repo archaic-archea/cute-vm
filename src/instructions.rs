@@ -135,7 +135,7 @@ union StatusUnion {
 
 use core::ops::{Add, Sub};
 
-use crate::{MEM, pop, push, top};
+use crate::{MEM, pop, push};
 
 impl Add for Status {
     type Output = Self;
