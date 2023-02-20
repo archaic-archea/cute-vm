@@ -12,27 +12,27 @@ pub static mut MEM: Memory = Memory::null();
 pub static PRIMARY_STACK: Mutex<Stack> = Mutex::new(Stack::new(0xff));
 pub static RETURN_STACK: Mutex<Stack> = Mutex::new(Stack::new(0x1ff));
 
-pub fn push(data: u32, flags: &Vec<Status>) {
-    if flags.contains(&Status::Return) {
-        RETURN_STACK.lock().unwrap().push(data, &flags);
+pub fn push(data: u32, flags: Status) {
+    if flags.contains(Status::RETURN) {
+        RETURN_STACK.lock().unwrap().push(data, flags);
     } else {
-        PRIMARY_STACK.lock().unwrap().push(data, &flags);
+        PRIMARY_STACK.lock().unwrap().push(data, flags);
     }
 }
 
-pub fn pop(flags: &Vec<Status>) -> u32 {
-    if flags.contains(&Status::Return) {
-        return RETURN_STACK.lock().unwrap().pop(&flags);
+pub fn pop(flags: Status) -> u32 {
+    if flags.contains(Status::RETURN) {
+        return RETURN_STACK.lock().unwrap().pop(flags);
     } else {
-        return PRIMARY_STACK.lock().unwrap().pop(&flags);
+        return PRIMARY_STACK.lock().unwrap().pop(flags);
     }
 }
 
-pub fn copy(index: usize, flags: &Vec<Status>) -> u32 {
-    if flags.contains(&Status::Return) {
-        return RETURN_STACK.lock().unwrap().copy(index, &flags);
+pub fn copy(index: usize, flags: Status) -> u32 {
+    if flags.contains(Status::RETURN) {
+        return RETURN_STACK.lock().unwrap().copy(index, flags);
     } else {
-        return PRIMARY_STACK.lock().unwrap().copy(index, &flags);
+        return PRIMARY_STACK.lock().unwrap().copy(index, flags);
     }
 }
 
@@ -44,6 +44,14 @@ pub fn top(ret_stack: bool) -> usize {
     }
 }
 
+pub fn instr_ptr() -> usize {
+    unsafe {
+        MEM.read_u16(0x200) as usize
+    }
+}
+
+pub fn instr() -> instructions::Instr {todo!()}
+
 /// Initialize memory
 /// TODO: Add custom memory sizes
 pub fn init() {
@@ -51,12 +59,13 @@ pub fn init() {
 
     let memory = args.memory_size.unwrap_or_else(|| {0xFFFF});
 
-    if memory < 0x402 {
+    if memory < 0x202 {
         panic!("Not enough memory provided for stack and instruction pointer");
     }
 
     unsafe {
         MEM = Memory::new(memory as usize);
+        MEM.write_u16(0x200, 0x202);
     }
 }
 

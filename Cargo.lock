@@ -68,6 +68,7 @@ dependencies = [
 name = "cute-vm"
 version = "0.1.0"
 dependencies = [
+ "bitflags",
  "clap",
  "lazy_static",
  "num",

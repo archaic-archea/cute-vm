@@ -11,7 +11,7 @@
 | `jsr`  | ( addr -- ) [ -- retaddr] | jump to the address             |
 */
 
-use num_derive::{FromPrimitive, ToPrimitive};
+use num_derive::FromPrimitive;
 
 #[derive(FromPrimitive)]
 pub enum Instr {
@@ -25,17 +25,17 @@ pub enum Instr {
     Jsr
 }
 
-#[derive(FromPrimitive, ToPrimitive, Clone, Copy, Debug, PartialEq, PartialOrd)]
-pub enum Status {
-    Keep = 0x1, //Copies values off stack instead of popping them
-    Return = 0x2,
-    Short = 0x4, //Allows 32 bit operations
-    Reserved1 = 0x8,
-    Reserved2 = 0x16,
-    Reserved3 = 0x32,
-    Reserved4 = 0x64,
-    Reserved5 = 0x128,
-    None = 0x00
+bitflags::bitflags! {
+    pub struct Status: u8 {
+        const KEEP = 0b1;
+        const RETURN = 0b10;
+        const SHORT = 0b100;
+        const _RESERVED1 = 0b1000;
+        const _RESERVED2 = 0b10000;
+        const _RESERVED3 = 0b100000;
+        const _RESERVED4 = 0b1000000;
+        const _RESERVED5 = 0b10000000;
+    }
 }
 
 impl Instr {
@@ -46,7 +46,7 @@ impl Instr {
         num::FromPrimitive::from_u16(instr).expect("Invalid opcode")
     }
 
-    pub fn execute(&self, flags: &Vec<Status>) {
+    pub fn execute(&self, flags: Status) {
         let instr_ptr = unsafe {&mut super::MEM.read_u16(0x400)};
 
         match self {
@@ -54,61 +54,49 @@ impl Instr {
             Instr::Lit => {
                 let data = unsafe {MEM[(*instr_ptr + 2) as usize]};
 
-                let mut tmpflags = Vec::new();
-                if flags.contains(&Status::Return) {tmpflags.push(Status::Return)}
+                let mut tmpflags = Status::null();
+                if flags.contains(Status::RETURN) {tmpflags |= Status::RETURN}
 
-                crate::push(data as u32, &tmpflags);
+                crate::push(data as u32, tmpflags);
 
-                if flags.contains(&Status::Short) {
+                if flags.contains(Status::SHORT) {
                     *instr_ptr += 1;
                 }
             },
             Instr::Dup => {
-                let mut tmpflags = flags.clone();
-                tmpflags.push(Status::Keep);
+                let mut tmpflags = flags;
+                tmpflags |= Status::KEEP;
 
-                let data = pop(&tmpflags);
+                let data = pop(tmpflags);
 
-                if tmpflags.contains(&Status::Return) {
-                    for i in (0..tmpflags.len()).rev() {
-                        if tmpflags[i as usize] == Status::Return {
-                            tmpflags.remove(i as usize);
-                        }
-                    }
+                if tmpflags.contains(Status::RETURN) {
+                    tmpflags.set(Status::RETURN, false);
                 } else {
-                    tmpflags.push(Status::Return);
+                    tmpflags |= Status::RETURN;
                 }
 
-                push(data, &tmpflags);
+                push(data, tmpflags);
             },
             Instr::Over => {
-                let mut tmpflags = flags.clone();
+                let mut tmpflags = flags;
 
-                if tmpflags.contains(&Status::Keep) {
-                    for i in (0..tmpflags.len()).rev() {
-                        if tmpflags[i as usize] == Status::Return {
-                            tmpflags.remove(i as usize);
-                        }
-                    }
-                }
+                tmpflags.set(Status::KEEP, false);
 
-                let mut pop_buf = Vec::new();
+                let mut pop_buf = [0; 3];
 
-                pop_buf.push(pop(flags));
-                pop_buf.push(pop(flags));
-                pop_buf.push(pop(flags));
+                pop_buf[0] = pop(tmpflags);
+                pop_buf[1] = pop(tmpflags);
+                pop_buf[2] = pop(tmpflags);
 
-                let len = pop_buf.len();
-
-                let top = *pop_buf.last().unwrap();
+                let top = pop_buf[2];
                 let bottom = pop_buf[0];
 
                 pop_buf[0] = top;
-                pop_buf[len - 1] = bottom;
+                pop_buf[2] = bottom;
 
-                for entry in pop_buf.iter() {
-                    push(*entry, flags)
-                }
+                push(pop_buf[2], tmpflags);
+                push(pop_buf[1], tmpflags);
+                push(pop_buf[0], tmpflags);
             },
             Instr::Str => (),
             Instr::Load => (),
@@ -133,36 +121,4 @@ union StatusUnion {
     s: u8
 }
 
-use core::ops::{Add, Sub};
-
 use crate::{MEM, pop, push};
-
-impl Add for Status {
-    type Output = Self;
-
-    fn add(self, other: Self) -> Self {
-        unsafe {
-            let first = StatusUnion {f: self};
-            let second = StatusUnion {f: other};
-
-            let su = StatusUnion {s: first.s + second.s};
-        
-            return su.f
-        }
-    }
-}
-
-impl Sub for Status {
-    type Output = Self;
-
-    fn sub(self, other: Self) -> Self {
-        unsafe {
-            let first = StatusUnion {f: self};
-            let second = StatusUnion {f: other};
-
-            let su = StatusUnion {s: first.s - second.s};
-            
-            return su.f
-        }
-    }
-}

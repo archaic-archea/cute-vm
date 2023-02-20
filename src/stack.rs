@@ -12,12 +12,10 @@ impl Stack {
         self.offset = offset;
     }
 
-    pub fn push(&mut self, data: u32, flags: &Vec<Status>) {
+    pub fn push(&mut self, data: u32, flags: Status) {
         if self.offset >= 0x200 {
             panic!("Stack overflow");
         }
-        
-        let base = self.location as usize;
 
         let index = self.offset as usize;
 
@@ -28,7 +26,7 @@ impl Stack {
 
         self.offset += 2;
 
-        if flags.contains(&Status::Short) {
+        if flags.contains(Status::SHORT) {
             let index = self.offset as usize;
 
             self[index] = bytes[2];
@@ -38,13 +36,13 @@ impl Stack {
         }
     }
 
-    pub fn pop(&mut self, flags: &Vec<Status>) -> u32 {
+    pub fn pop(&mut self, flags: Status) -> u32 {
         if self.offset < 2 {
             self.offset = 2
         }
         self.offset -= 2;
 
-        if flags.contains(&Status::Short) {
+        if flags.contains(Status::SHORT) {
             if self.offset < 2 {
                 self.offset = 2
             }
@@ -56,7 +54,7 @@ impl Stack {
         let bytes: [u8; 4];
 
 
-        if flags.contains(&Status::Short) {
+        if flags.contains(Status::SHORT) {
             let mbytes = [self[index + 2], self[index + 3]];
             let lbytes = [self[index], self[index + 1]];
 
@@ -75,18 +73,18 @@ impl Stack {
 
         let ret = u32::from_be_bytes(bytes);
 
-        if flags.contains(&Status::Keep) {
-            self.push(ret, &flags);
+        if flags.contains(Status::KEEP) {
+            self.push(ret, flags);
         }
 
         ret
     }
 
-    pub fn copy(&self, index: usize, flags: &Vec<Status>) -> u32 {
+    pub fn copy(&self, index: usize, flags: Status) -> u32 {
         let bytes: [u8; 4];
 
 
-        if flags.contains(&Status::Short) {
+        if flags.contains(Status::SHORT) {
             let mbytes = [self[index + 2], self[index + 3]];
             let lbytes = [self[index], self[index + 1]];
 
@@ -146,7 +144,7 @@ impl fmt::Display for Stack {
         let range = 0..self.offset;
 
         for i in range.step_by(2) {
-            write!(f, "{}", self.copy(i as usize, &vec![Status::None]))?;
+            write!(f, "{}", self.copy(i as usize, Status::null()))?;
             if i != self.offset - 2 {
                 write!(f, "\n")?;
             }
@@ -163,7 +161,7 @@ impl fmt::Debug for Stack {
         let range = 0..self.offset;
 
         for i in range.step_by(4) {
-            write!(f, "{}", self.copy(i as usize, &vec![Status::Short]))?;
+            write!(f, "{}", self.copy(i as usize, Status::SHORT))?;
             if i != self.offset - 4 {
                 write!(f, "\n")?;
             }
