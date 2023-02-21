@@ -46,7 +46,7 @@ pub fn top(ret_stack: bool) -> usize {
 
 pub fn instr_ptr() -> usize {
     unsafe {
-        MEM.read_u16(0x200) as usize
+        MEM.read_u32(0x200) as usize
     }
 }
 
@@ -59,13 +59,13 @@ pub fn init() {
 
     let memory = args.memory_size.unwrap_or(0xFFFF);
 
-    if memory < 0x202 {
+    if memory < 0x204 {
         panic!("Not enough memory provided for stack and instruction pointer");
     }
 
     unsafe {
         MEM = Memory::new(memory as usize);
-        MEM.write_u16(0x200, 0x202);
+        MEM.write_u16(0x200, 0x204);
     }
 }
 

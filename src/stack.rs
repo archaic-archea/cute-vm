@@ -154,7 +154,7 @@ impl fmt::Debug for Stack {
             let range = 0..self.offset;
     
             for i in range.step_by(2) {
-                write!(f, "0x{:x}", self.copy(i as usize, Status::null()))?;
+                write!(f, "0x{:x}", self.copy(i as usize, Status::NONE))?;
                 if i != self.offset - 2 {
                     write!(f, "\n")?;
                 }

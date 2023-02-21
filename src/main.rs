@@ -1,26 +1,22 @@
-use cute_vm::{instructions::{Status, Instr}, PRIMARY_STACK, RETURN_STACK};
+use cute_vm::{instructions::{Status, Instr}, PRIMARY_STACK, instr_ptr, RETURN_STACK};
 
 fn main() {
     cute_vm::init();
     println!("Initialized");
 
-    let flags = Status::SHORT;
+    let flags = Status::NONE;
     println!("Set flags");
 
-    PRIMARY_STACK.lock().unwrap().push(0xffff, flags);
-    PRIMARY_STACK.lock().unwrap().push(0xfffe, flags);
-    PRIMARY_STACK.lock().unwrap().push(0xfffd, flags);
-    PRIMARY_STACK.lock().unwrap().push(0xfffc, flags);
-    println!("Pushed to stack");
+    PRIMARY_STACK.lock().unwrap().push(0xFFFF_FFFF, flags | Status::SHORT);
+    println!("Pushed to stack\n");
 
-    println!("{:#?}\n", PRIMARY_STACK.lock().unwrap());
-
-    Instr::Over.execute(flags);
-
-    println!("{:#?}\n", PRIMARY_STACK.lock().unwrap());
-
-    Instr::Dup.execute(flags);
+    println!("Instr ptr: 0x{:x}", instr_ptr());
 
     println!("Primary {:#?}", PRIMARY_STACK.lock().unwrap());
-    println!("Secondary {:#?}", RETURN_STACK.lock().unwrap());
+    println!("Return {:#?}", RETURN_STACK.lock().unwrap());
+    Instr::Jsr.execute(flags);
+    println!("Instr ptr: 0x{:x}", instr_ptr());
+
+    println!("Primary {:#?}", PRIMARY_STACK.lock().unwrap());
+    println!("Return {:#?}", RETURN_STACK.lock().unwrap());
 }
