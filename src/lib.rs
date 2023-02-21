@@ -75,5 +75,5 @@ use instructions::Status;
 #[clap(author="Lilly, & Arc", version, about="A simple stack machine")]
 struct Args {
     #[clap(short, long)]
-    memory_size: Option<u16>,
+    memory_size: Option<u32>,
 }
