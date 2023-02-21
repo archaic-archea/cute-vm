@@ -1,15 +1,15 @@
 /* 
-| Instr  | Stack desc                 | Desc                            |
-| ------ | -------------------------- | ------------------------------- |
-| `nop`  | ( -- )                     | Does nothing                    |
-| `lit`  | ( -- x )                   | push the next byte to the stack |
-| `dup`  | ( x -- x ) [ -- x ]        | duplicate the top of stack      |
-| `over` | ( x y z -- z x y )         | standard stack over             |
-| `str`  | ( addr -- value )          | write data into memory          |
-| `load` | ( value addr -- )          | load data from memory           |
-| `push` | ( value -- ) [ -- value ]  | write to other stack            |
-| `drop`  | ( value -- )               | Delete a value permanently      |
-| `jsr`  | ( addr -- ) [ -- retaddr ] | jump to the address             |
+| opcode | Instr  | Stack desc                | Desc                            |
+| ------ | ------ | ------------------------- | ------------------------------- |
+| 0b0000 | `nop`  | ( -- )                    | Does nothing                    |
+| 0b0001 | `lit`  | ( -- x )                  | push the next byte to the stack |
+| 0b0010 | `dup`  | ( x -- x x )              | duplicate the top of stack      |
+| 0b0011 | `over` | ( x y z -- z x y )        | standard stack over             |
+| 0b0100 | `str`  | ( addr -- value )         | write data into memory          |
+| 0b0101 | `load` | ( value addr -- )         | load data from memory           |
+| 0b0110 | `push` | ( value -- )              | write to other stack            |
+| 0b0111 | `drop` | ( value -- )              | Delete a value permanently      |
+| 0b1000 | `jsr`  | ( addr -- ) [ -- retaddr] | jump to the address             |
 */
 
 use num_derive::FromPrimitive;
