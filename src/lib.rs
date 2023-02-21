@@ -50,7 +50,14 @@ pub fn instr_ptr() -> usize {
     }
 }
 
-pub fn instr() -> instructions::Instr {todo!()}
+pub fn instr() -> instructions::Instruction {
+    let binary = unsafe {MEM.read_u16(instr_ptr())}.to_le_bytes();
+
+    let instr = instructions::Instr::from_byte(binary[0]);
+    let flag = instructions::Status::from_bits(binary[1]).unwrap();
+
+    instructions::Instruction::new(instr, flag)
+}
 
 /// Initialize memory
 /// TODO: Add custom memory sizes
@@ -65,8 +72,24 @@ pub fn init() {
 
     unsafe {
         MEM = Memory::new(memory as usize);
-        MEM.write_u16(0x200, 0x204);
+        MEM.write_u32(0x200, 0x204);
     }
+
+    let file_path = std::path::Path::new(&args.file);
+    let file = std::fs::read(file_path).expect("Error reading binary");
+
+    assert!(file.len() & 0b1 == 0, "File length is not aligned properly");
+
+    let base = 0x204;
+    let mut offset = 0;
+    for data in file.iter() {
+        unsafe {
+            MEM[base + offset] = *data;
+        }
+
+        offset += 1;
+    }
+
 }
 
 use clap::Parser;
@@ -76,4 +99,7 @@ use instructions::Status;
 struct Args {
     #[clap(short, long)]
     memory_size: Option<u32>,
+
+    #[clap(short, long)]
+    file: String
 }

@@ -13,6 +13,7 @@
 */
 
 use num_derive::FromPrimitive;
+use crate::{MEM, pop, push};
 
 #[derive(FromPrimitive, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Instr {
@@ -47,6 +48,21 @@ impl Instr {
         let instr = unsafe {super::MEM.read_u16(instr_ptr as usize)};
 
         num::FromPrimitive::from_u16(instr).expect("Invalid opcode")
+    }
+
+    pub fn from_byte(byte: u8) -> Self {
+        match byte {
+            0 => Self::Nop,
+            1 => Self::Lit,
+            2 => Self::Dup,
+            3 => Self::Over,
+            4 => Self::Str,
+            5 => Self::Load,
+            6 => Self::Push,
+            7 => Self::Drop,
+            8 => Self::Jsr,
+            _ => panic!("Invalid instruction 0b{:b}", byte)
+        }
     }
 
     pub fn execute(&self, flags: Status) {
@@ -168,4 +184,14 @@ impl Instr {
     }
 }
 
-use crate::{MEM, pop, push};
+pub struct Instruction(Instr, Status);
+
+impl Instruction {
+    pub const fn new(instr: Instr, status: Status) -> Self {
+        Instruction(instr, status)
+    }
+    
+    pub fn execute(&self) {
+        self.0.execute(self.1)
+    }
+}
