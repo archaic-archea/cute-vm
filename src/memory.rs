@@ -20,6 +20,8 @@ impl Memory {
     }
 
     pub fn read_u16(&self, index: usize) -> u16 {
+        assert!(index & 0b1 == 0, "Address for word not aligned");
+
         let bytes = [
             self[index],
             self[index + 1],
@@ -29,6 +31,8 @@ impl Memory {
     }
 
     pub fn read_u32(&self, index: usize) -> u32 {
+        assert!(index & 0b11 == 0, "Address for short not aligned");
+
         let bytes = [
             self[index],
             self[index + 1],
@@ -40,6 +44,8 @@ impl Memory {
     }
 
     pub fn read_u64(&self, index: usize) -> u64 {
+        assert!(index & 0b111 == 0, "Address for long not aligned");
+
         let bytes = [
             self[index],
             self[index + 1],
@@ -55,6 +61,8 @@ impl Memory {
     }
 
     pub fn write_u16(&mut self, index: usize, num: u16) {
+        assert!(index & 0b1 == 0, "Address for word not aligned");
+
         let bytes = num.to_le_bytes();
 
         self[index] = bytes[0];
@@ -62,6 +70,8 @@ impl Memory {
     }
 
     pub fn write_u32(&mut self, index: usize, num: u32) {
+        assert!(index & 0b11 == 0, "Address for short not aligned");
+
         let bytes = num.to_le_bytes();
 
         self[index] = bytes[0];
@@ -71,6 +81,8 @@ impl Memory {
     }
 
     pub fn write_u64(&mut self, index: usize, num: u64) {
+        assert!(index & 0b111 == 0, "Address for long not aligned");
+
         let bytes = num.to_le_bytes();
 
         self[index] = bytes[0];
