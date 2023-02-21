@@ -10,12 +10,15 @@
 | 0b0110 | `push` | ( value -- )              | write to other stack            |
 | 0b0111 | `drop` | ( value -- )              | Delete a value permanently      |
 | 0b1000 | `jsr`  | ( addr -- ) [ -- retaddr] | jump to the address             |
+
+
+| 0b1111 | `halt` |                           | Halt the machine                |
 */
 
 use num_derive::FromPrimitive;
-use crate::{MEM, pop, push};
+use crate::{MEM, pop, push, instr_ptr, set_instr_ptr, offset_instr_ptr};
 
-#[derive(FromPrimitive, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(FromPrimitive, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub enum Instr {
     Nop,
     Lit,
@@ -25,7 +28,8 @@ pub enum Instr {
     Load,
     Push,
     Drop,
-    Jsr
+    Jsr,
+    Halt
 }
 
 bitflags::bitflags! {
@@ -61,29 +65,32 @@ impl Instr {
             6 => Self::Push,
             7 => Self::Drop,
             8 => Self::Jsr,
-            _ => panic!("Invalid instruction 0b{:b}", byte)
+            0xff => Self::Halt,
+            _ => panic!("Invalid instruction 0b{:b} at address 0x{:x}", byte, instr_ptr())
         }
     }
 
     pub fn execute(&self, flags: Status) {
-        let instr_ptr = unsafe {&mut super::MEM.read_u32(0x200)};
+        let instr_ptr = instr_ptr();
+
+        //println!("Instruction {:?}\nIP 0x{:x}", self, instr_ptr);
 
         match self {
             Instr::Nop => (),
             Instr::Lit => {
                 let data: u32;
                 if flags.contains(Status::SHORT) {
-                    data = unsafe {MEM.read_u32((*instr_ptr + 2) as usize)};
+                    data = unsafe {MEM.read_u32((instr_ptr + 2) as usize)};
                 } else {
-                    data = unsafe {MEM.read_u16((*instr_ptr + 2) as usize)} as u32;
+                    data = unsafe {MEM.read_u16((instr_ptr + 2) as usize)} as u32;
                 }
 
                 crate::push(data as u32, flags);
 
                 if flags.contains(Status::SHORT) {
-                    *instr_ptr += 4;
+                    offset_instr_ptr(4);
                 } else {
-                    *instr_ptr += 2
+                    offset_instr_ptr(2);
                 }
             },
             Instr::Dup => {
@@ -162,24 +169,28 @@ impl Instr {
                 pop(flags);
             },
             Instr::Jsr => {
-                let old_ptr = *instr_ptr + 2;
+                let old_ptr = (instr_ptr + 2) as u32;
 
                 if flags.contains(Status::RETURN) {
                     let flag = Status::SHORT;
                     push(old_ptr, flag);
 
-                    *instr_ptr = pop(flag | Status::RETURN);
+                    set_instr_ptr(pop(flag | Status::RETURN))
                 } else {
                     let flag = Status::RETURN | Status::SHORT;
                     push(old_ptr, flag);
 
-                    *instr_ptr = pop(flag - Status::RETURN);
+                    set_instr_ptr(pop(flag - Status::RETURN))
                 }
+            },
+            Instr::Halt => {
+                println!("VM Halting");
+                std::process::exit(0);
             }
         }
 
         if *self != Instr::Jsr {
-            *instr_ptr += 2;
+            offset_instr_ptr(2);
         }
     }
 }

@@ -13,8 +13,8 @@ impl Stack {
     }
 
     pub fn push(&mut self, data: u32, flags: Status) {
-        if self.offset >= 0x200 {
-            panic!("Stack overflow");
+        if self.offset >= 0x100 {
+            panic!("Stack overflow, attempted to push with offset {}", self.offset);
         }
 
         let index = self.offset as usize;
@@ -125,7 +125,7 @@ impl Index<usize> for Stack {
 
 impl IndexMut<usize> for Stack {
     fn index_mut(&mut self, rhs: usize) -> &mut u8 {
-        if rhs >= 128 {
+        if rhs >= 256 {
             panic!("index out of bounds: the len is 256 but the index is {}", rhs);
         }
 

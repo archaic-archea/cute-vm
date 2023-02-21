@@ -50,6 +50,18 @@ pub fn instr_ptr() -> usize {
     }
 }
 
+pub fn set_instr_ptr(ip: u32) {
+    unsafe {
+        MEM.write_u32(0x200, ip);
+    }
+}
+
+pub fn offset_instr_ptr(offset: isize) {
+    let ip = instr_ptr() as isize;
+
+    set_instr_ptr((ip + offset) as u32);
+}
+
 pub fn instr() -> instructions::Instruction {
     let binary = unsafe {MEM.read_u16(instr_ptr())}.to_le_bytes();
 
