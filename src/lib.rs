@@ -51,12 +51,15 @@ pub fn instr_ptr() -> usize {
 }
 
 pub fn set_instr_ptr(ip: u32) {
+    assert!(ip & 0b1 == 0, "Instruction pointer unaligned");
+
     unsafe {
         MEM.write_u32(0x200, ip);
     }
 }
 
 pub fn offset_instr_ptr(offset: isize) {
+    assert!(offset & 0b1 == 0, "Instruction pointer unaligned");
     let ip = instr_ptr() as isize;
 
     set_instr_ptr((ip + offset) as u32);
