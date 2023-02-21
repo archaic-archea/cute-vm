@@ -137,33 +137,27 @@ impl IndexMut<usize> for Stack {
 
 use std::fmt;
 
-impl fmt::Display for Stack {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Stack:\n")?;
-
-        let range = 0..self.offset;
-
-        for i in range.step_by(2) {
-            write!(f, "{}", self.copy(i as usize, Status::null()))?;
-            if i != self.offset - 2 {
-                write!(f, "\n")?;
-            }
-        }
-
-        Ok(())
-    }
-}
-
 impl fmt::Debug for Stack {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Stack:\n")?;
 
-        let range = 0..self.offset;
-
-        for i in range.step_by(4) {
-            write!(f, "{}", self.copy(i as usize, Status::SHORT))?;
-            if i != self.offset - 4 {
-                write!(f, "\n")?;
+        if f.alternate() {
+            let range = 0..self.offset;
+    
+            for i in range.step_by(4) {
+                write!(f, "0x{:x}", self.copy(i as usize, Status::SHORT))?;
+                if i != self.offset - 4 {
+                    write!(f, "\n")?;
+                }
+            }
+        } else {
+            let range = 0..self.offset;
+    
+            for i in range.step_by(2) {
+                write!(f, "0x{:x}", self.copy(i as usize, Status::null()))?;
+                if i != self.offset - 2 {
+                    write!(f, "\n")?;
+                }
             }
         }
 
