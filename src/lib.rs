@@ -57,7 +57,7 @@ pub fn instr() -> instructions::Instr {todo!()}
 pub fn init() {
     let args = Args::parse();
 
-    let memory = args.memory_size.unwrap_or_else(|| {0xFFFF});
+    let memory = args.memory_size.unwrap_or(0xFFFF);
 
     if memory < 0x202 {
         panic!("Not enough memory provided for stack and instruction pointer");
