@@ -5,8 +5,8 @@
 | `lit`  | ( -- x )                  | push the next byte to the stack |
 | `dup`  | ( x -- x x )              | duplicate the top of stack      |
 | `over` | ( x y z -- z x y )        | standard stack over             |
-| `str`  | ( addr -- value )         | load data into memory           |
-| `load` | ( value addr -- )         | write data into memory          |
+| `str`  | ( addr -- value )         | write data into memory          |
+| `load` | ( value addr -- )         | load data from memory           |
 | `push` | ( value -- )              | write to other stack            |
 | `jsr`  | ( addr -- ) [ -- retaddr] | jump to the address             |
 */
