@@ -3,6 +3,7 @@ extern crate alloc;
 pub mod stack;
 pub mod memory;
 pub mod instructions;
+pub mod sic;
 
 use self::{memory::Memory, stack::Stack};
 
@@ -11,6 +12,8 @@ use std::sync::Mutex;
 pub static mut MEM: Memory = Memory::null();
 pub static PRIMARY_STACK: Mutex<Stack> = Mutex::new(Stack::new(0xff));
 pub static RETURN_STACK: Mutex<Stack> = Mutex::new(Stack::new(0x1ff));
+pub static INTERRUPT: Mutex<bool> = Mutex::new(false);
+pub static INT_CONTROLLER: Mutex<sic::Sic> = Mutex::new(sic::Sic::new(0x800));
 
 pub fn push(data: u32, flags: Status) {
     if flags.contains(Status::RETURN) {
@@ -117,4 +120,12 @@ struct Args {
 
     #[clap(short, long)]
     file: String
+}
+
+pub fn store_ret() {
+    INT_CONTROLLER.lock().unwrap().store_ret();
+}
+
+pub fn int_jmp() {
+    INT_CONTROLLER.lock().unwrap().jmp();
 }

@@ -80,9 +80,9 @@ impl Instr {
             Instr::Lit => {
                 let data: u32;
                 if flags.contains(Status::SHORT) {
-                    data = unsafe {MEM.read_u32((instr_ptr + 2) as usize)};
+                    data = unsafe {MEM.vm_read_u32((instr_ptr + 2) as usize)};
                 } else {
-                    data = unsafe {MEM.read_u16((instr_ptr + 2) as usize)} as u32;
+                    data = unsafe {MEM.vm_read_u16((instr_ptr + 2) as usize)} as u32;
                 }
 
                 crate::push(data as u32, flags);
@@ -149,10 +149,10 @@ impl Instr {
                 unsafe {
                     match flags.contains(Status::SHORT) {
                         true => {
-                            push(MEM.read_u32(store_addr), flags);
+                            push(MEM.vm_read_u32(store_addr), flags);
                         },
                         false => {
-                            push(MEM.read_u16(store_addr) as u32, flags);
+                            push(MEM.vm_read_u16(store_addr) as u32, flags);
                         }
                     }
                 }
@@ -195,6 +195,7 @@ impl Instr {
     }
 }
 
+#[derive(Debug)]
 pub struct Instruction(Instr, Status);
 
 impl Instruction {

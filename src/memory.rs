@@ -19,9 +19,19 @@ impl Memory {
         }
     }
 
-    pub fn read_u16(&self, index: usize) -> u16 {
-        assert!(index & 0b1 == 0, "Address for word not aligned");
+    pub fn vm_read_u16(&self, index: usize) -> u16 {
+        if index & 0b1 != 0 {
+            INT_CONTROLLER.lock().unwrap().gen_int(0, true);
 
+            println!("VM u16 address not aligned 0x{:x}", index);
+
+            return 0;
+        }
+
+        self.read_u16(index)
+    }
+
+    pub fn read_u16(&self, index: usize) -> u16 {
         let bytes = [
             self[index],
             self[index + 1],
@@ -30,8 +40,19 @@ impl Memory {
         u16::from_le_bytes(bytes)
     }
 
+    pub fn vm_read_u32(&self, index: usize) -> u32 {
+        if index & 0b11 != 0 {
+            INT_CONTROLLER.lock().unwrap().gen_int(0, true);
+
+            println!("VM u32 address not aligned 0x{:x}", index);
+
+            return 0;
+        }
+
+        self.read_u32(index)
+    }
+
     pub fn read_u32(&self, index: usize) -> u32 {
-        assert!(index & 0b11 == 0, "Address for short not aligned");
 
         let bytes = [
             self[index],
@@ -60,17 +81,35 @@ impl Memory {
         u64::from_le_bytes(bytes)
     }
 
-    pub fn write_u16(&mut self, index: usize, num: u16) {
-        assert!(index & 0b1 == 0, "Address for word not aligned");
+    pub fn vm_write_u16(&mut self, index: usize, num: u16) {
+        if index & 0b1 != 0 {
+            println!("u16 address not aligned");
 
+            INT_CONTROLLER.lock().unwrap().gen_int(1, true);
+        }
+
+        self.write_u16(index, num);
+    }
+
+    pub fn write_u16(&mut self, index: usize, num: u16) {
         let bytes = num.to_le_bytes();
 
         self[index] = bytes[0];
         self[index + 1] = bytes[1];
     }
 
+    pub fn vm_write_u32(&mut self, index: usize, num: u32) {
+        if index & 0b11 != 0 {
+            println!("u32 address not aligned");
+
+            INT_CONTROLLER.lock().unwrap().gen_int(1, true);
+        }
+
+        self.write_u32(index, num);
+    }
+
     pub fn write_u32(&mut self, index: usize, num: u32) {
-        assert!(index & 0b11 == 0, "Address for short not aligned");
+        println!("Writing 0x{:x} to 0x{:x}", num, index);
 
         let bytes = num.to_le_bytes();
 
@@ -98,11 +137,15 @@ impl Memory {
 
 use core::ops::{ Index, IndexMut };
 
+use crate::INT_CONTROLLER;
+
 impl Index<usize> for Memory {
     type Output = u8;
 
     fn index(&self, rhs: usize) -> &u8 {
         if rhs >= self.size {
+            INT_CONTROLLER.lock().unwrap().gen_int(2, true);
+
             panic!("index out of bounds: the len is {} but the index is {}", self.size, rhs);
         }
 
@@ -113,6 +156,8 @@ impl Index<usize> for Memory {
 impl IndexMut<usize> for Memory {
     fn index_mut(&mut self, rhs: usize) -> &mut u8 {
         if rhs > self.size {
+            INT_CONTROLLER.lock().unwrap().gen_int(2, true);
+
             panic!("index out of bounds: the len is {} but the index is {}", self.size, rhs);
         }
         
