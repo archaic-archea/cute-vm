@@ -1,15 +1,27 @@
 pub struct Stack {
-    location: u16,
+    location: u32,
     offset: u16
 }
 
 impl Stack {
-    pub const fn new(location: u16) -> Stack {
+    pub const fn new(location: u32) -> Stack {
         Stack { location, offset: 0}
+    }
+
+    pub unsafe fn set_pos(&mut self, location: u32) {
+        self.location = location;
     }
 
     pub unsafe fn set_offset(&mut self, offset: u16) {
         self.offset = offset;
+    }
+
+    pub fn offset(&self) -> u16 {
+        self.offset
+    }
+
+    pub fn location(&self) -> u32 {
+        self.location
     }
 
     pub fn push(&mut self, data: u32, flags: Status) {

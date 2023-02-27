@@ -1,5 +1,6 @@
 use crate::MEM;
 
+#[derive(Debug)]
 pub struct Sic {
     pub jmp: u32,
     pub cause: u32,

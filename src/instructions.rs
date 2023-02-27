@@ -16,7 +16,7 @@
 */
 
 use num_derive::FromPrimitive;
-use crate::{MEM, pop, push, instr_ptr, set_instr_ptr, offset_instr_ptr};
+use crate::{MEM, pop, push, instr_ptr, set_instr_ptr, offset_instr_ptr, MMU};
 
 #[derive(FromPrimitive, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub enum Instr {
@@ -87,10 +87,12 @@ impl Instr {
             Instr::Lit => {
                 let data: u32;
                 if flags.contains(Status::SHORT) {
-                    data = unsafe {MEM.vm_read_u32((instr_ptr + 2) as usize)};
+                    data = MMU.lock().unwrap().read_u32((instr_ptr + 2) as u32);
                 } else {
-                    data = unsafe {MEM.vm_read_u16((instr_ptr + 2) as usize)} as u32;
+                    data = MMU.lock().unwrap().read_u16((instr_ptr + 2) as u32) as u32;
                 }
+
+                println!("Loading immediate: 0x{:x} from 0x{:x}", data, instr_ptr + 2);
 
                 crate::push(data as u32, flags);
             },
@@ -130,31 +132,29 @@ impl Instr {
                 push(pop_buf[0], tmpflags);
             },
             Instr::Str => {
-                let store_addr = pop(flags | Status::SHORT) as usize;
+                let store_addr = pop(flags | Status::SHORT);
                 let data = pop(flags);
 
-                unsafe {
-                    match flags.contains(Status::SHORT) {
-                        true => {
-                            MEM.write_u32(store_addr, data);
-                        },
-                        false => {
-                            MEM.write_u16(store_addr, data as u16)
-                        }
+                println!("Storing 0x{:x} at address 0x{:x}", data, store_addr);
+
+                match flags.contains(Status::SHORT) {
+                    true => {
+                        MMU.lock().unwrap().write_u32(store_addr, data);
+                    },
+                    false => {
+                        MMU.lock().unwrap().write_u16(store_addr, data as u16);
                     }
                 }
             },
             Instr::Load => {
-                let store_addr = pop(flags | Status::SHORT) as usize;
+                let store_addr = pop(flags | Status::SHORT);
 
-                unsafe {
-                    match flags.contains(Status::SHORT) {
-                        true => {
-                            push(MEM.vm_read_u32(store_addr), flags);
-                        },
-                        false => {
-                            push(MEM.vm_read_u16(store_addr) as u32, flags);
-                        }
+                match flags.contains(Status::SHORT) {
+                    true => {
+                        push(MMU.lock().unwrap().read_u32(store_addr), flags);
+                    },
+                    false => {
+                        push(MMU.lock().unwrap().read_u16(store_addr) as u32, flags);
                     }
                 }
             },
