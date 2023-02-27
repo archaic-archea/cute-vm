@@ -18,7 +18,5 @@ fn main() {
         //println!("Running instruction {:?} at 0x{:x}", instruction, cute_vm::instr_ptr());
 
         instruction.execute();
-
-        std::thread::sleep(std::time::Duration::from_secs(1));
     }
 }

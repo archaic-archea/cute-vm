@@ -20,6 +20,8 @@ impl Memory {
     }
 
     pub fn vm_read_u16(&self, index: usize) -> u16 {
+        println!("Reading 0x{:x}", index);
+
         if index & 0b1 != 0 {
             INT_CONTROLLER.lock().unwrap().gen_int(0, true);
 
@@ -41,6 +43,8 @@ impl Memory {
     }
 
     pub fn vm_read_u32(&self, index: usize) -> u32 {
+        println!("Reading 0x{:x}", index);
+
         if index & 0b11 != 0 {
             INT_CONTROLLER.lock().unwrap().gen_int(0, true);
 
@@ -82,6 +86,8 @@ impl Memory {
     }
 
     pub fn vm_write_u16(&mut self, index: usize, num: u16) {
+        println!("Writing 0x{:x} to 0x{:x}", num, index);
+
         if index & 0b1 != 0 {
             println!("u16 address not aligned");
 
@@ -99,6 +105,8 @@ impl Memory {
     }
 
     pub fn vm_write_u32(&mut self, index: usize, num: u32) {
+        println!("Writing 0x{:x} to 0x{:x}", num, index);
+
         if index & 0b11 != 0 {
             println!("u32 address not aligned");
 
@@ -109,8 +117,6 @@ impl Memory {
     }
 
     pub fn write_u32(&mut self, index: usize, num: u32) {
-        //println!("Writing 0x{:x} to 0x{:x}", num, index);
-
         let bytes = num.to_le_bytes();
 
         self[index] = bytes[0];

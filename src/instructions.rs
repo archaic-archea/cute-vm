@@ -190,6 +190,9 @@ impl Instr {
                 let val1 = pop(flags);
                 let val2 = pop(flags);
 
+                let order = val1.cmp(&val2);
+                println!("{val1} is {:?} compared to {val2}", order);
+
                 if val1 == val2 {
                     condition_register |= ConditionRegister::EQUAL;
                 }
