@@ -1,6 +1,6 @@
 .base 0x600
 
-/*Code                           */     /*Addr   */     /*Base Out  */  /*Binary output*/
+/*Code                                *//*Addr        *//*Base Out    *//*Binary output*/
 base:                                   0x600
     //store the new function start
     nop //help align data               0x600           0x00 0x00       0x00_00
