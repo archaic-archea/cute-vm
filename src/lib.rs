@@ -13,7 +13,7 @@ pub static mut MEM: Memory = Memory::null();
 pub static PRIMARY_STACK: Mutex<Stack> = Mutex::new(Stack::new(0xff));
 pub static RETURN_STACK: Mutex<Stack> = Mutex::new(Stack::new(0x1ff));
 pub static INTERRUPT: Mutex<bool> = Mutex::new(false);
-pub static INT_CONTROLLER: Mutex<sic::Sic> = Mutex::new(sic::Sic::new(0x800));
+pub static INT_CONTROLLER: Mutex<sic::Sic> = Mutex::new(sic::Sic::new(0x300));
 
 pub fn push(data: u32, flags: Status) {
     if flags.contains(Status::RETURN) {
@@ -90,7 +90,7 @@ pub fn init() {
 
     unsafe {
         MEM = Memory::new(memory as usize);
-        MEM.write_u32(0x200, 0x204);
+        MEM.write_u32(0x200, 0x600);
     }
 
     let file_path = std::path::Path::new(&args.file);
@@ -98,7 +98,7 @@ pub fn init() {
 
     assert!(file.len() & 0b1 == 0, "File length is not aligned properly");
 
-    let base = 0x204;
+    let base = 0x600;
     let mut offset = 0;
     for data in file.iter() {
         unsafe {

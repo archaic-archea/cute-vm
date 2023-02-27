@@ -109,7 +109,7 @@ impl Memory {
     }
 
     pub fn write_u32(&mut self, index: usize, num: u32) {
-        println!("Writing 0x{:x} to 0x{:x}", num, index);
+        //println!("Writing 0x{:x} to 0x{:x}", num, index);
 
         let bytes = num.to_le_bytes();
 

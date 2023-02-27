@@ -15,7 +15,7 @@ fn main() {
 
         let instruction = cute_vm::instr();
 
-        println!("Running instruction {:?} at 0x{:x}", instruction, cute_vm::instr_ptr());
+        //println!("Running instruction {:?} at 0x{:x}", instruction, cute_vm::instr_ptr());
 
         instruction.execute();
 

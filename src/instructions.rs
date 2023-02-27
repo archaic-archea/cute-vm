@@ -10,7 +10,7 @@
 | 0b0110 | `push` | ( value -- )              | write to other stack            |
 | 0b0111 | `drop` | ( value -- )              | Delete a value permanently      |
 | 0b1000 | `jsr`  | ( addr -- ) [ -- retaddr] | jump to the address             |
-
+| 0b1001 | `cmp`  | ( val2 val1 -- )          | compare values                  |
 
 | 0b1111 | `halt` |                           | Halt the machine                |
 */
@@ -29,20 +29,27 @@ pub enum Instr {
     Push,
     Drop,
     Jsr,
+    Cmp,
     Halt
 }
 
 bitflags::bitflags! {
     pub struct Status: u8 {
-        const KEEP = 0b1;
-        const RETURN = 0b10;
-        const SHORT = 0b100;
-        const _RESERVED1 = 0b1000;
-        const _RESERVED2 = 0b10000;
-        const _RESERVED3 = 0b100000;
-        const _RESERVED4 = 0b1000000;
-        const _RESERVED5 = 0b10000000;
+        const KEEP = 0b1; // 0x1
+        const RETURN = 0b10; // 0x2
+        const SHORT = 0b100; // 0x4
+        const IF_EQUAL = 0b1000; // 0x8
+        const IF_GREATER = 0b10000; // 0x10
+        const IF_LESS = 0b100000; // 0x20
+        const _RESERVED1 = 0b1000000; // 0x40
+        const _RESERVED2 = 0b10000000; // 0x80
         const NONE = 0;
+    }
+
+    pub struct ConditionRegister: u16 {
+        const EQUAL = 0b1;
+        const GREATER = 0b10;
+        const LESS = 0b100;
     }
 }
 
@@ -65,6 +72,7 @@ impl Instr {
             6 => Self::Push,
             7 => Self::Drop,
             8 => Self::Jsr,
+            9 => Self::Cmp,
             0xff => Self::Halt,
             _ => panic!("Invalid instruction 0b{:b} at address 0x{:x}", byte, instr_ptr())
         }
@@ -74,7 +82,6 @@ impl Instr {
         let instr_ptr = instr_ptr();
 
         //println!("Instruction {:?}\nIP 0x{:x}", self, instr_ptr);
-
         match self {
             Instr::Nop => (),
             Instr::Lit => {
@@ -86,12 +93,6 @@ impl Instr {
                 }
 
                 crate::push(data as u32, flags);
-
-                if flags.contains(Status::SHORT) {
-                    offset_instr_ptr(4);
-                } else {
-                    offset_instr_ptr(2);
-                }
             },
             Instr::Dup => {
                 let mut tmpflags = flags;
@@ -183,14 +184,28 @@ impl Instr {
                     set_instr_ptr(pop(flag - Status::RETURN))
                 }
             },
+            Instr::Cmp => {
+                let mut condition_register = ConditionRegister::empty();
+
+                let val1 = pop(flags);
+                let val2 = pop(flags);
+
+                if val1 == val2 {
+                    condition_register |= ConditionRegister::EQUAL;
+                }
+                if val1 < val2 {
+                    condition_register |= ConditionRegister::LESS;
+                }
+                if val1 > val2 {
+                    condition_register |= ConditionRegister::GREATER;
+                }
+
+                condition_register.write();
+            },
             Instr::Halt => {
                 println!("VM Halting");
                 std::process::exit(0);
             }
-        }
-
-        if *self != Instr::Jsr {
-            offset_instr_ptr(2);
         }
     }
 }
@@ -204,6 +219,82 @@ impl Instruction {
     }
     
     pub fn execute(&self) {
-        self.0.execute(self.1)
+        let conditions = ConditionRegister::read();
+
+        let flags = self.1;
+
+        if flags.contains(Status::IF_EQUAL) && conditions.contains(ConditionRegister::EQUAL) {
+            println!("Executing {:?}", self);
+            self.0.execute(self.1);
+        } else if flags.contains(Status::IF_GREATER) && conditions.contains(ConditionRegister::GREATER) {
+            println!("Executing {:?}", self);
+            self.0.execute(self.1);
+        } else if flags.contains(Status::IF_LESS) && conditions.contains(ConditionRegister::LESS) {
+            println!("Executing {:?}", self);
+            self.0.execute(self.1);
+        } else if !(flags.contains(Status::IF_GREATER) | flags.contains(Status::IF_LESS) | flags.contains(Status::IF_EQUAL)) {
+            println!("Executing {:?}", self);
+            self.0.execute(self.1);
+        }
+
+        if self.0 != Instr::Jsr {
+            offset_instr_ptr(2);
+        }
+
+        if self.0 == Instr::Lit {
+            if self.1.contains(Status::SHORT) {
+                offset_instr_ptr(4);
+            } else {
+                offset_instr_ptr(2);
+            }
+        }
+    }
+}
+
+impl ConditionRegister {
+    pub fn read() -> Self {
+        let state = unsafe {
+            MEM.read_u16(0x204)
+        };
+
+        Self::from_bits(state).unwrap()
+    }
+
+    pub fn add(&self) {
+        let start = unsafe {
+            MEM.read_u16(0x204)
+        };
+
+        let mask = start | self.bits();
+
+        unsafe {
+            MEM.write_u16(0x204, mask)
+        }
+    }
+
+    pub fn clear(&self) {
+        let start = unsafe {
+            MEM.read_u16(0x204)
+        };
+
+        let mask = start & !self.bits();
+
+        unsafe {
+            MEM.write_u16(0x204, mask)
+        }
+    }
+
+    pub fn reset() {
+        unsafe {
+            MEM.write_u16(0x204, 0);
+        }
+    }
+
+    pub fn write(&self) {
+        let state = self.bits();
+
+        unsafe {
+            MEM.write_u16(0x204, state);
+        }
     }
 }
