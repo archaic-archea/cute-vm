@@ -4,16 +4,20 @@ pub mod stack;
 pub mod memory;
 pub mod instructions;
 pub mod sic;
+pub mod mmu;
 
 use self::{memory::Memory, stack::Stack};
 
-
-use std::sync::Mutex;
+use std::sync::{Mutex, mpsc::{Sender, Receiver}};
 pub static mut MEM: Memory = Memory::null();
-pub static PRIMARY_STACK: Mutex<Stack> = Mutex::new(Stack::new(0xff));
-pub static RETURN_STACK: Mutex<Stack> = Mutex::new(Stack::new(0x1ff));
+pub static MMU: Mutex<MMU> = Mutex::new(MMU::new(0, 0xfff, 0x1000, 0xffff_ffff));
+pub static PRIMARY_STACK: Mutex<Stack> = Mutex::new(Stack::new(0x10ff));
+pub static RETURN_STACK: Mutex<Stack> = Mutex::new(Stack::new(0x11ff));
 pub static INTERRUPT: Mutex<bool> = Mutex::new(false);
-pub static INT_CONTROLLER: Mutex<sic::Sic> = Mutex::new(sic::Sic::new(0x300));
+pub static INT_CONTROLLER: Mutex<sic::Sic> = Mutex::new(sic::Sic::new());
+
+pub static INT_SEND: Mutex<Option<Sender<()>>> = Mutex::new(None);
+pub static INT_REC: Mutex<Option<Receiver<()>>> = Mutex::new(None);
 
 pub fn push(data: u32, flags: Status) {
     if flags.contains(Status::RETURN) {
@@ -108,10 +112,15 @@ pub fn init() {
         offset += 1;
     }
 
+    let (tx, rx) = std::sync::mpsc::channel::<()>();
+
+    *INT_SEND.lock().unwrap() = Some(tx);
+    *INT_REC.lock().unwrap() = Some(rx);
 }
 
 use clap::Parser;
 use instructions::Status;
+use mmu::MMU;
 #[derive(Parser,Default,Debug)]
 #[clap(author="Lilly, & Arc", version, about="A simple stack machine")]
 struct Args {
