@@ -1,4 +1,4 @@
-use crate::INT_CONTROLLER;
+use crate::{INT_CONTROLLER, OUT_PUT_READY};
 
 pub struct MMU {
     io_base: u32,
@@ -13,7 +13,7 @@ impl MMU {
     }
 
     pub fn read_u16(&self, index: u32) -> u16 {
-        if (index < self.io_max) && (index > self.io_base) {
+        if (index <= self.io_max) && (index >= self.io_base) {
             match index {
                 0x300 => {
                     crate::INT_CONTROLLER.lock().unwrap().jmp as u16
@@ -30,7 +30,7 @@ impl MMU {
                     0
                 }
             }
-        } else if (index < self.memory_max) && (index > self.memory_base) {
+        } else if (index <= self.memory_max) && (index >= self.memory_base) {
             unsafe {
                 crate::MEM.vm_read_u16((index - self.memory_base) as usize)
             }
@@ -42,7 +42,7 @@ impl MMU {
     }
 
     pub fn read_u32(&self, index: u32) -> u32 {
-        if (index < self.io_max) && (index > self.io_base) {
+        if (index <= self.io_max) && (index >= self.io_base) {
             match index {
                 0x300 => {
                     crate::INT_CONTROLLER.lock().unwrap().jmp
@@ -59,7 +59,7 @@ impl MMU {
                     0
                 }
             }
-        } else if (index < self.memory_max) && (index > self.memory_base) {
+        } else if (index <= self.memory_max) && (index >= self.memory_base) {
             unsafe {
                 crate::MEM.vm_read_u32((index - self.memory_base) as usize)
             }
@@ -71,7 +71,7 @@ impl MMU {
     }
 
     pub fn write_u16(&self, index: u32, num: u16) {
-        if (index < self.io_max) && (index > self.io_base) {
+        if (index <= self.io_max) && (index >= self.io_base) {
             match index {
                 0x00 => {
                     unsafe {
@@ -93,21 +93,28 @@ impl MMU {
                         crate::RETURN_STACK.lock().unwrap().set_offset(num)
                     }
                 },
+                0x0C => {
+                    INT_CONTROLLER.lock().unwrap().gen_int(0, false);
+                },
                 0x100 => {
                     unsafe {
+                        use std::sync::atomic::Ordering;
+                        
+                        log::info!("Giving data to output device");
                         crate::IO_SEND.send_data(num as u8).expect("Failed to send to io");
+                        OUT_PUT_READY.store(false, Ordering::Relaxed);
                     }
                 },
                 0x300 => {
-                    println!("Writing jump for SIC");
+                    log::info!("Writing jump for SIC");
                     crate::INT_CONTROLLER.lock().unwrap().jmp = num as u32
                 },
                 _ => {
                     INT_CONTROLLER.lock().unwrap().gen_int(3, true);
-                    println!("Invaled IO write address: 0x{:x}", index)
+                    log::warn!("Invaled IO write address: 0x{:x}", index)
                 }
             }
-        } else if (index < self.memory_max) && (index > self.memory_base) {
+        } else if (index <= self.memory_max) && (index >= self.memory_base) {
             unsafe {
                 crate::MEM.vm_write_u16((index - self.memory_base) as usize , num)
             }
@@ -118,7 +125,7 @@ impl MMU {
     }
 
     pub fn write_u32(&self, index: u32, num: u32) {
-        if (index < self.io_max) && (index > self.io_base) {
+        if (index <= self.io_max) && (index >= self.io_base) {
             match index {
                 0x00 => {
                     unsafe {
@@ -136,21 +143,25 @@ impl MMU {
                         crate::RETURN_STACK.lock().unwrap().set_offset(num as u16);
                     }
                 },
+                0x0C => {
+                    INT_CONTROLLER.lock().unwrap().gen_int(0, false);
+                },
                 0x100 => {
                     unsafe {
+                        log::info!("Giving data to output device");
                         crate::IO_SEND.send_data(num as u8).expect("Failed to send to io");
                     }
                 },
                 0x300 => {
-                    println!("Writing jump for SIC");
+                    log::info!("Writing jump for SIC");
                     crate::INT_CONTROLLER.lock().unwrap().jmp = num
                 },
                 _ => {
                     INT_CONTROLLER.lock().unwrap().gen_int(3, true);
-                    println!("Invaled IO write address: 0x{:x}", index)
+                    log::warn!("Invaled IO write address: 0x{:x}", index)
                 }
             }
-        } else if (index < self.memory_max) && (index > self.memory_base) {
+        } else if (index <= self.memory_max) && (index >= self.memory_base) {
             unsafe {
                 crate::MEM.vm_write_u32((index - self.memory_base) as usize , num)
             }

@@ -1,0 +1,30 @@
+@1600
+    nop
+    lit$s #end
+    nop
+    lit$s 0xx300
+    str$s
+    lit 0x01
+    lit$s 0xx0C
+    str
+    halt
+    nop
+#end
+    lit 0x69
+    lit$s 0xx100
+    str
+    lit 0x6E
+    lit$s 0xx100
+    str
+    lit 0x74
+    lit$s 0xx100
+    str
+    halt
+#printbuf
+    lit$s 0xx100
+@2000
+#charbufstart
+    nop
+    nop
+    nop
+    nop

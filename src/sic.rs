@@ -19,6 +19,7 @@ impl Sic {
     /// Stores the location to jump to for an interrupt
     pub fn jmp(&self) {
         unsafe {
+            log::info!("Int jumping to 0x{:x}", self.jmp);
             MEM.write_u32(0x200, self.jmp);
         }
     }

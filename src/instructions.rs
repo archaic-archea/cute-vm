@@ -92,7 +92,7 @@ impl Instr {
                     data = MMU.lock().unwrap().read_u16((instr_ptr + 2) as u32) as u32;
                 }
 
-                println!("Loading immediate: 0x{:x} from 0x{:x}", data, instr_ptr + 2);
+                log::info!("Loading immediate: 0x{:x} from 0x{:x}", data, instr_ptr + 2);
 
                 crate::push(data as u32, flags);
             },
@@ -135,7 +135,7 @@ impl Instr {
                 let store_addr = pop(flags | Status::SHORT);
                 let data = pop(flags);
 
-                println!("Storing 0x{:x} at address 0x{:x}", data, store_addr);
+                log::info!("Storing 0x{:x} at address 0x{:x}", data, store_addr);
 
                 match flags.contains(Status::SHORT) {
                     true => {
@@ -206,7 +206,9 @@ impl Instr {
                 condition_register.write();
             },
             Instr::Halt => {
-                println!("VM Halting");
+                use std::sync::atomic::Ordering;
+                log::info!("VM Halting");
+                crate::HALTED.store(true, Ordering::Relaxed);
                 std::process::exit(0);
             }
         }
@@ -227,16 +229,16 @@ impl Instruction {
         let flags = self.1;
 
         if flags.contains(Status::IF_EQUAL) && conditions.contains(ConditionRegister::EQUAL) {
-            println!("Executing {:?}", self);
+            //println!("Executing {:?}", self);
             self.0.execute(self.1);
         } else if flags.contains(Status::IF_GREATER) && conditions.contains(ConditionRegister::GREATER) {
-            println!("Executing {:?}", self);
+            //println!("Executing {:?}", self);
             self.0.execute(self.1);
         } else if flags.contains(Status::IF_LESS) && conditions.contains(ConditionRegister::LESS) {
-            println!("Executing {:?}", self);
+            //println!("Executing {:?}", self);
             self.0.execute(self.1);
         } else if !(flags.contains(Status::IF_GREATER) | flags.contains(Status::IF_LESS) | flags.contains(Status::IF_EQUAL)) {
-            println!("Executing {:?}", self);
+            //println!("Executing {:?}", self);
             self.0.execute(self.1);
         }
 

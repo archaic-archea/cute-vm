@@ -25,7 +25,7 @@ impl Memory {
         if index & 0b1 != 0 {
             INT_CONTROLLER.lock().unwrap().gen_int(0, true);
 
-            println!("VM u16 address not aligned 0x{:x}", index);
+            log::warn!("VM u16 address not aligned 0x{:x}", index);
 
             return 0;
         }
@@ -48,7 +48,7 @@ impl Memory {
         if index & 0b11 != 0 {
             INT_CONTROLLER.lock().unwrap().gen_int(0, true);
 
-            println!("VM u32 address not aligned 0x{:x}", index);
+            log::warn!("VM u32 address not aligned 0x{:x}", index);
 
             return 0;
         }
@@ -89,7 +89,7 @@ impl Memory {
         //println!("Writing 0x{:x} to 0x{:x}", num, index);
 
         if index & 0b1 != 0 {
-            println!("u16 address not aligned");
+            log::warn!("u16 address not aligned");
 
             INT_CONTROLLER.lock().unwrap().gen_int(1, true);
         }
@@ -108,7 +108,7 @@ impl Memory {
         //println!("Writing 0x{:x} to 0x{:x}", num, index);
 
         if index & 0b11 != 0 {
-            println!("u32 address not aligned");
+            log::warn!("u32 address not aligned");
 
             INT_CONTROLLER.lock().unwrap().gen_int(1, true);
         }

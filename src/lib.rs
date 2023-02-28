@@ -8,13 +8,16 @@ pub mod mmu;
 
 use self::{memory::Memory, stack::Stack};
 
-use std::{sync::{Mutex, mpsc::{Sender, Receiver, SendError}}, io::Write};
+use std::{sync::{Mutex, mpsc::{Sender, Receiver, SendError}, atomic::AtomicBool}, io::Write};
 pub static mut MEM: Memory = Memory::null();
 pub static MMU: Mutex<MMU> = Mutex::new(MMU::new(0, 0xfff, 0x1000, 0xffff_ffff));
 pub static PRIMARY_STACK: Mutex<Stack> = Mutex::new(Stack::new(0x10ff));
 pub static RETURN_STACK: Mutex<Stack> = Mutex::new(Stack::new(0x11ff));
 pub static INTERRUPT: Mutex<bool> = Mutex::new(false);
 pub static INT_CONTROLLER: Mutex<sic::Sic> = Mutex::new(sic::Sic::new());
+
+pub static HALTED: AtomicBool = AtomicBool::new(false);
+pub static OUT_PUT_READY: AtomicBool = AtomicBool::new(false);
 
 pub static mut IO_SEND: DeviceSender<u8> = DeviceSender::new();
 
@@ -69,6 +72,7 @@ pub fn offset_instr_ptr(offset: isize) {
 
 pub fn instr() -> instructions::Instruction {
     let binary = unsafe {
+        log::info!("Instrptr: 0x{:x}", instr_ptr());
         MEM.read_u16(instr_ptr() - 0x1000).to_le_bytes()
     };
 
@@ -81,6 +85,7 @@ pub fn instr() -> instructions::Instruction {
 /// Initialize memory
 /// TODO: Add custom memory sizes
 pub fn init() {
+    env_logger::init();
     let args = Args::parse();
 
     let memory = args.memory_size.unwrap_or(0xFFFF);
@@ -141,7 +146,10 @@ pub fn int_jmp() {
 
 fn term_out(receiver: Receiver<u8>) -> ! {
     loop {
-        //println!("Awaiting data");
+        use std::sync::atomic::Ordering;
+
+        OUT_PUT_READY.store(true, Ordering::Relaxed);
+        log::info!("Awaiting data");
         let value = receiver.recv().expect("Failed to get message");
         print!("{}", value as char);
         std::io::stdout().flush().expect("Failed to flush stdout");
