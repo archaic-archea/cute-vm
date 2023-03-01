@@ -25,7 +25,7 @@ impl Memory {
         if index & 0b1 != 0 {
             INT_CONTROLLER.lock().unwrap().gen_int(0, true);
 
-            log::warn!("VM u16 address not aligned 0x{:x}", index);
+            log::warn!("VM u16 address not aligned 0x{:x}", index + 0x1000);
 
             return 0;
         }
@@ -48,7 +48,7 @@ impl Memory {
         if index & 0b11 != 0 {
             INT_CONTROLLER.lock().unwrap().gen_int(0, true);
 
-            log::warn!("VM u32 address not aligned 0x{:x}", index);
+            log::warn!("VM u32 address not aligned 0x{:x}", index + 0x1000);
 
             return 0;
         }

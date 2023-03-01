@@ -1,18 +1,23 @@
 /* 
-| opcode | Instr  | Stack desc                | Desc                            |
-| ------ | ------ | ------------------------- | ------------------------------- |
-| 0b0000 | `nop`  | ( -- )                    | Does nothing                    |
-| 0b0001 | `lit`  | ( -- x )                  | push the next byte to the stack |
-| 0b0010 | `dup`  | ( x -- x x )              | duplicate the top of stack      |
-| 0b0011 | `over` | ( x y z -- z x y )        | standard stack over             |
-| 0b0100 | `str`  | ( addr -- value )         | write data into memory          |
-| 0b0101 | `load` | ( value addr -- )         | load data from memory           |
-| 0b0110 | `push` | ( value -- )              | write to other stack            |
-| 0b0111 | `drop` | ( value -- )              | Delete a value permanently      |
-| 0b1000 | `jsr`  | ( addr -- ) [ -- retaddr] | jump to the address             |
-| 0b1001 | `cmp`  | ( val2 val1 -- )          | compare values                  |
+| opcode | Instr  | Stack desc                   | Desc                            |
+| ------ | ------ | ---------------------------- | ------------------------------- |
+| 0b0000 | `nop`  | ( -- )                       | Does nothing                    |
+| 0b0001 | `lit`  | ( -- x )                     | push the next byte to the stack |
+| 0b0010 | `dup`  | ( x -- x x )                 | duplicate the top of stack      |
+| 0b0011 | `over` | ( x y z -- z x y )           | standard stack over             |
+| 0b0100 | `str`  | ( addr -- value )            | write data into memory          |
+| 0b0101 | `load` | ( value addr -- )            | load data from memory           |
+| 0b0110 | `push` | ( value -- )                 | write to other stack            |
+| 0b0111 | `drop` | ( value -- )                 | Delete a value permanently      |
+| 0b1000 | `jsr`  | ( addr -- ) [ -- retaddr]    | jump to the address             |
+| 0b1001 | `cmp`  | ( val2 val1 -- )             | compare values                  |
 
-| 0b1111 | `halt` |                           | Halt the machine                |
+| 0b1010 | `add`  | ( val2 val1 -- val1 + val2)  | add values                      |
+| 0b1011 | `sub`  | ( val2 val1 -- val1 - val2)  | subtract values                 |
+| 0b1100 | `mul`  | ( val2 val1 -- val1 * val2)  | multoply values                 |
+| 0b1101 | `div`  | ( val2 val1 -- val1 / val2)  | divide values                   |
+
+| 0b1111 | `halt` |                              | Halt the machine                |
 */
 
 use num_derive::FromPrimitive;
@@ -30,6 +35,10 @@ pub enum Instr {
     Drop,
     Jsr,
     Cmp,
+    Add,
+    Sub,
+    Mul,
+    Div,
     Halt
 }
 
@@ -73,7 +82,11 @@ impl Instr {
             7 => Self::Drop,
             8 => Self::Jsr,
             9 => Self::Cmp,
-            0xff => Self::Halt,
+            10 => Self::Add,
+            11 => Self::Sub,
+            12 => Self::Mul,
+            13 => Self::Div,
+            0xf => Self::Halt,
             _ => panic!("Invalid instruction 0b{:b} at address 0x{:x}", byte, instr_ptr())
         }
     }
@@ -204,6 +217,30 @@ impl Instr {
                 }
 
                 condition_register.write();
+            },
+            Instr::Add => {
+                let val2 = pop(flags);
+                let val1 = pop(flags);
+
+                push(val1 + val2, flags);
+            },
+            Instr::Sub => {
+                let val2 = pop(flags);
+                let val1 = pop(flags);
+
+                push(val1 - val2, flags);
+            },
+            Instr::Mul => {
+                let val2 = pop(flags);
+                let val1 = pop(flags);
+
+                push(val1 * val2, flags);
+            },
+            Instr::Div => {
+                let val2 = pop(flags);
+                let val1 = pop(flags);
+
+                push(val1 / val2, flags);
             },
             Instr::Halt => {
                 use std::sync::atomic::Ordering;
